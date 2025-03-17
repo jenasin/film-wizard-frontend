@@ -12,7 +12,7 @@ user_id = st.text_input("User ID")
 
 if st.button("Get Recommendations"):
     if user_id:
-        FASTAPI_URL = "http://127.0.0.1:8000/recommend"
+        FASTAPI_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app/recommend"
         response = requests.get(FASTAPI_URL, params={"user_id": user_id})
 
         if response.status_code == 200:
@@ -21,7 +21,6 @@ if st.button("Get Recommendations"):
                 st.subheader("Recommended Movies:")
                 for rec in data["recommendations"]:
                     st.write(f"🎬 {rec['movie_id']} - Probability: {rec['probability_of_liking']:.2f}")
-                    print(f"Recommended: {rec['movie_id']} - Probability: {rec['probability_of_liking']:.2f}")
             else:
                 st.warning("No recommendations found for this user.")
         else:
