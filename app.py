@@ -143,13 +143,12 @@ if st.button("Get Recommendations") and dataframe is not None:
                                 st.image(url, width=120)  # Display the image
                     else:
                         st.warning("No poster images available.")
-
-                        # Remove GIF and trigger popcorn animation
-                        gif_placeholder.empty()
-                        example()
-
                 else:
                     st.warning("No recommendations found.")
+
+                # Remove GIF and trigger popcorn animation
+                gif_placeholder.empty()
+                example()
             else:
                 st.error(f"Error from API: Status code {response.status_code}")
                 if hasattr(response, 'text'):
