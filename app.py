@@ -17,7 +17,7 @@ st.title("🎬 Film Wizard - Your Personal Movie Recommender")
 st.sidebar.header("Upload CSV for Recommendations")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
-BACKEND_URL = "https://film-wizard-frontend-twwappq8a7ndmhotiwklc9u.streamlit.app/"
+BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
 
 # Load and display GIF
 path_to_gif = "data/Wizard Buffer.gif"
