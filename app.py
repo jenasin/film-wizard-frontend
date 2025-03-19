@@ -14,6 +14,8 @@ uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"  # Ensure this matches your backend URL
 
 dataframe = None
+df_recommendations = None
+cluster_df = None
 
 if uploaded_file is not None:
     with st.spinner("Loading file..."):
@@ -40,3 +42,22 @@ if st.button("Get Recommendations") and dataframe is not None:
                 st.warning("No recommendations found.")
         else:
             st.error("Error fetching recommendations.")
+
+if st.button("Get Cluster Info") and df_recommendations is not None:
+    with st.spinner("Fetching movie clusters..."):
+        time.sleep(2)  # Simulate loading time
+        
+        BACKEND_URL = 'http://localhost:8501'
+        # Convert DataFrame to JSON and send it to the backend
+        response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
+
+        if response.status_code == 200:
+            data = response.json()
+            if "info" in data:
+                st.subheader("Recommended Movie Clusters:")
+                cluster_df = pd.DataFrame(data["info"])
+                st.dataframe(cluster_df)  # Display as DataFrame
+            else:
+                st.warning("No clusters found.")
+        else:
+            st.error("Error fetching clusters.")
