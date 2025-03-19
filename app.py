@@ -17,7 +17,7 @@ st.title("🎬 Film Wizard - Your Personal Movie Recommender")
 st.sidebar.header("Upload CSV for Recommendations")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
-BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
+BACKEND_URL = "http://localhost:8080/"
 
 # Load and display GIF
 path_to_gif = "data/Wizard Buffer.gif"
@@ -131,9 +131,22 @@ if st.button("Get Recommendations") and dataframe is not None:
                     # Show number of recommendations
                     st.info(f"Showing {len(display_df)} recommendations.")
 
-                    # Remove GIF and trigger popcorn animation
-                    gif_placeholder.empty()
-                    example()
+                    # Display movie posters if `poster_url` exists
+                    if "poster_url" in df_recommendations.columns:
+                        st.subheader("🎭 Movie Posters:")
+                        image_urls = df_recommendations["poster_url"].dropna().tolist()
+
+                        # Display images in a grid layout
+                        cols = st.columns(5)  # Create 5 columns for the grid
+                        for index, url in enumerate(image_urls):
+                            with cols[index % 5]:  # Loop through columns
+                                st.image(url, width=120)  # Display the image
+                    else:
+                        st.warning("No poster images available.")
+
+                        # Remove GIF and trigger popcorn animation
+                        gif_placeholder.empty()
+                        example()
 
                 else:
                     st.warning("No recommendations found.")
