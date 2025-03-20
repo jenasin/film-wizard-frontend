@@ -19,6 +19,7 @@ uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
 
 BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
+# BACKEND_URL = "http://127.0.0.1:8080"
 
 # Load and display GIF
 path_to_gif = "data/Wizard Buffer.gif"
@@ -142,6 +143,10 @@ if st.button("Get Recommendations") and dataframe is not None:
                         for index, url in enumerate(image_urls):
                             with cols[index % 5]:  # Loop through columns
                                 st.image(url, width=120)  # Display the image
+                                st.write(df_recommendations.dropna(subset='poster_url').loc[index, 'Title'])
+                                # st.write(df_recommendations.dropna(subset='poster_url').loc[index, 'Genre'])
+                                st.write(df_recommendations.dropna(subset='poster_url').loc[index, 'Duration (min)'])
+                                st.write(f"Estimated Rating: {df_recommendations.dropna(subset='poster_url').loc[index, 'Estimated Rating']}")
                     else:
                         st.warning("No poster images available.")
                     response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
