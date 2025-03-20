@@ -89,7 +89,7 @@ if st.button("Get Recommendations") and dataframe is not None:
 
                     # Display movie posters first
                     if "poster_url" in df_recommendations.columns:
-                        st.subheader("🎭 Movie Posters:")
+                        st.subheader("🎭 Movie Recommendations:")
                         image_urls = df_recommendations.dropna(subset=['poster_url'])[['poster_url', 'Title', 'Duration (min)', 'Estimated Rating']]
 
                         cols = st.columns(5)  # Create 5 columns for the grid
@@ -123,9 +123,26 @@ if st.button("Get Recommendations") and dataframe is not None:
                         data = response.json()
                         if "info" in data:
                             st.subheader("Recommended Movie Clusters:")
-                            cluster_df = pd.DataFrame(data["info"])
 
-                            st.dataframe(cluster_df)  # Display as DataFrame
+                            # Convert API response to DataFrame
+                            cluster_df = pd.DataFrame(data["info"])
+                            # Count occurrences of each cluster in recommendations_df
+                            if "Cluster" in df_recommendations.columns:
+                                cluster_counts = df_recommendations["Cluster"].value_counts().reset_index()
+
+                                # Merge counts with cluster_df
+                                cluster_df = cluster_df.merge(cluster_counts, on="Cluster", how="left").fillna(0)
+                                cluster_df.columns = ["Cluster Num", "Movies In Cluster", 'Sentiment Entropy Lvl','Top Genres', 'Words/Min', 'Years Education', 'Recommendations']
+
+                            # Display editable table
+                            #edited_cluster_df = st.data_editor(cluster_df, num_rows="dynamic")
+
+                            # Sort by "Count" column in descending order
+                            sorted_cluster_df = cluster_df.sort_values(by="Recommendations", ascending=False)
+
+                            # Show the sorted DataFrame
+                            st.dataframe(sorted_cluster_df)
+
                         else:
                             st.warning("No clusters found.")
                     else:
