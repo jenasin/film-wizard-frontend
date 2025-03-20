@@ -18,8 +18,8 @@ st.sidebar.header("Upload CSV for Recommendations")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
 
-BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
-# BACKEND_URL = "http://127.0.0.1:8080"
+#BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
+BACKEND_URL = "http://127.0.0.1:8080"
 
 # Load and display GIF
 path_to_gif = "data/Wizard Buffer.gif"
@@ -151,16 +151,36 @@ if st.button("Get Recommendations") and dataframe is not None:
                         st.warning("No poster images available.")
                     response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
 
+                    ####
                     if response.status_code == 200:
                         data = response.json()
                         if "info" in data:
                             st.subheader("Recommended Movie Clusters:")
+                            
+                            # Convert API response to DataFrame
                             cluster_df = pd.DataFrame(data["info"])
-                            st.dataframe(cluster_df)  # Display as DataFrame
+                            # Count occurrences of each cluster in recommendations_df
+                            if "Cluster" in recommendations_df.columns:
+                                cluster_counts = recommendations_df["Cluster"].value_counts().reset_index()
+                                
+                                # Merge counts with cluster_df
+                                cluster_df = cluster_df.merge(cluster_counts, on="Cluster", how="left").fillna(0)
+                                cluster_df.columns = ["Cluster Num", "Movies In Cluster", 'Sentiment Entropy Lvl', 'Words/Min', 'Years Education', 'Recommendations']
+
+                            # Display editable table
+                            edited_cluster_df = st.data_editor(cluster_df, num_rows="dynamic")
+
+                            # Sort by "Count" column in descending order
+                            sorted_cluster_df = edited_cluster_df.sort_values(by="Count", ascending=False)
+
+                            # Show the sorted DataFrame
+                            st.dataframe(sorted_cluster_df)
+
                         else:
                             st.warning("No clusters found.")
                     else:
                         st.error("Error fetching clusters.")
+                    ######
                 else:
                     st.warning("No recommendations found.")
 
