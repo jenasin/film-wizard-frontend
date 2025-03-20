@@ -30,19 +30,17 @@ def example():
         emoji="🍿",
         font_size=100,
         falling_speed=1,
-        animation_length=2,
+        animation_length=3,
     )
+
+
 
 dataframe = None
 if uploaded_file is not None:
     try:
         # Load CSV file
         dataframe = pd.read_csv(uploaded_file).dropna()
-
-        # Convert all column names to lowercase for consistency
-        dataframe.columns = [col.lower() for col in dataframe.columns]
-
-        # Ensure required columns exist
+        dataframe.columns = [col.lower() for col in dataframe.columns]  # Lowercase column names
         required_columns = ['title', 'rating', 'year']
         missing_columns = [col for col in required_columns if col not in dataframe.columns]
 
@@ -50,11 +48,8 @@ if uploaded_file is not None:
             st.sidebar.warning(f"Missing columns: {', '.join(missing_columns)}. Please check your CSV.")
         else:
             st.sidebar.success("File loaded successfully!")
-
-            # Display input data
             st.subheader("Your Uploaded Movie Ratings:")
             st.dataframe(dataframe[['title', 'rating', 'year']], use_container_width=True)
-
     except Exception as e:
         st.sidebar.error(f"Error loading file: {e}")
         dataframe = None
@@ -64,83 +59,81 @@ if st.button("Get Recommendations") and dataframe is not None:
     with st.spinner("Generating recommendations..."):
         gif_placeholder = st.empty()
         gif_placeholder.markdown(
-            f'''
-            <div style="display: flex; justify-content: center;">
-                <img src="data:image/gif;base64,{data_url}" width="70%" alt="gif">
-            </div>
-            ''',
+            f'<div style="display: flex; justify-content: center;">'
+            f'<img src="data:image/gif;base64,{data_url}" width="70%" alt="gif">'
+            f'</div>',
             unsafe_allow_html=True,
         )
-
         try:
-            # Send request to API
             response = requests.post(f"{BACKEND_URL}/movie_predictions", json=dataframe.to_dict(orient="records"))
-
             if response.status_code == 200:
                 data = response.json()
-
                 if "predictions" in data and data["predictions"]:
-                    # Convert API response to DataFrame
                     df_recommendations = pd.DataFrame(data["predictions"])
-
-                    # Store in session state
                     st.session_state.recommendations_df = df_recommendations
 
-                    # Mapping API response fields to display fields
+                    # Field mapping
                     field_mapping = {
                         'title': 'Title',
                         'estimated_rating': 'Estimated Rating',
-                        'estimated rating': 'Estimated Rating',
-                        'prediction': 'Estimated Rating',
-                        'Duration (min)': 'Duration (min)',
                         'runtime': 'Duration (min)',
-                        'length': 'Duration (min)',
                         'genres': 'Genre',
-                        'genre': 'Genre',
                         'Cluster': 'Cluster'
                     }
 
-                    # Filter and rename columns
-                    display_columns = []
-                    rename_dict = {}
+                    # Rename columns
+                    display_columns = {col: field_mapping[col] for col in df_recommendations.columns if col in field_mapping}
+                    df_recommendations.rename(columns=display_columns, inplace=True)
 
-                    for api_col, display_name in field_mapping.items():
-                        matching_cols = [col for col in df_recommendations.columns if col.lower() == api_col.lower()]
-                        if matching_cols:
-                            col = matching_cols[0]
-                            display_columns.append(col)
-                            rename_dict[col] = display_name
+                    # Display movie posters first
+                    if "poster_url" in df_recommendations.columns:
+                        st.subheader("🎭 Movie Posters:")
+                        image_urls = df_recommendations.dropna(subset=['poster_url'])[['poster_url', 'Title', 'Duration (min)', 'Estimated Rating']]
 
-                    # Keep only the required columns in preferred order
-                    preferred_order = ['Title', 'Estimated Rating', 'Duration (min)', 'Genre', 'Cluster']
-                    display_columns = sorted(
-                        display_columns,
-                        key=lambda col: preferred_order.index(rename_dict[col]) if rename_dict[col] in preferred_order else len(preferred_order)
-                    )
-
-                    # Final DataFrame for display
-                    if display_columns:
-                        display_df = df_recommendations[display_columns].copy().rename(columns=rename_dict)
+                        cols = st.columns(5)  # Create 5 columns for the grid
+                        for index, row in image_urls.iterrows():
+                            with cols[index % 5]:
+                                st.image(row['poster_url'], width=120)  # Display the image
+                                st.markdown(
+                                    f"<div style='text-align: left; padding-top: 0px; padding-bottom: 15px;'>"
+                                    f"<b>{row['Title']}</b><br>"
+                                    f"<span style='color:black;'>{int(row['Duration (min)'])} mins</span><br>"
+                                    f"<b>Estimated Rating:</b> {row['Estimated Rating']}"
+                                    f"</div>",
+                                    unsafe_allow_html=True
+                                )
                     else:
-                        display_df = df_recommendations.copy()
+                        st.warning("No poster images available.")
 
-                    # Display recommendations
-                    st.subheader("Recommended Movies:")
-                    st.dataframe(display_df, use_container_width=True)
-
-                    # Show number of recommendations
-                    st.info(f"Showing {len(display_df)} recommendations.")
-
-                    # Remove GIF and trigger popcorn animation
+                    #Turn off gif
                     gif_placeholder.empty()
-                    example()
 
+                    # Display recommendation table after images
+                    st.subheader("Recommended Movies:")
+                    display_columns = ['Title', 'Estimated Rating', 'Duration (min)', 'Genres', 'Cluster']
+                    print(df_recommendations.columns)
+                    st.dataframe(df_recommendations[display_columns], use_container_width=True)
+                    st.info(f"Showing {len(df_recommendations)} recommendations.")
+
+                    response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "info" in data:
+                            st.subheader("Recommended Movie Clusters:")
+                            cluster_df = pd.DataFrame(data["info"])
+                            st.dataframe(cluster_df)
+                        else:
+                            st.warning("No clusters found.")
+                    else:
+                        st.error("Error fetching clusters.")
                 else:
                     st.warning("No recommendations found.")
+
+                gif_placeholder.empty()
+                example()
             else:
                 st.error(f"Error from API: Status code {response.status_code}")
                 if hasattr(response, 'text'):
                     st.error(f"Response: {response.text}")
-
         except Exception as e:
             st.error(f"Error processing recommendation request: {e}")
