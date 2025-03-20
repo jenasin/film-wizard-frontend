@@ -17,7 +17,9 @@ st.title("🎬 Film Wizard - Your Personal Movie Recommender")
 st.sidebar.header("Upload CSV for Recommendations")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
+
 BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
+# BACKEND_URL = "http://127.0.0.1:8080"
 
 # Load and display GIF
 path_to_gif = "data/Wizard Buffer.gif"
@@ -116,12 +118,14 @@ if st.button("Get Recommendations") and dataframe is not None:
                     st.info(f"Showing {len(df_recommendations)} recommendations.")
 
                     response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
+
                     if response.status_code == 200:
                         data = response.json()
                         if "info" in data:
                             st.subheader("Recommended Movie Clusters:")
                             cluster_df = pd.DataFrame(data["info"])
-                            st.dataframe(cluster_df)
+
+                            st.dataframe(cluster_df)  # Display as DataFrame
                         else:
                             st.warning("No clusters found.")
                     else:
@@ -129,7 +133,9 @@ if st.button("Get Recommendations") and dataframe is not None:
                 else:
                     st.warning("No recommendations found.")
 
-                gif_placeholder.empty()
+
+                # Remove GIF and trigger popcorn animation
+                # gif_placeholder.empty()
                 example()
             else:
                 st.error(f"Error from API: Status code {response.status_code}")
