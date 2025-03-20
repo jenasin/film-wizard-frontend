@@ -11,7 +11,8 @@ st.image("https://upload.wikimedia.org/wikipedia/commons/6/69/IMDB_Logo_2016.svg
 
 st.subheader("Upload CSV file for recommendations:")
 uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
-BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"  # Ensure this matches your backend URL
+# BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"  # Ensure this matches your backend URL
+BACKEND_URL = "http://127.0.0.1:8080"  # Ensure this matches your backend URL
 
 dataframe = None
 df_recommendations = None
@@ -26,8 +27,8 @@ if uploaded_file is not None:
         st.dataframe(dataframe)  # Display the cleaned dataframe
 
 if st.button("Get Recommendations") and dataframe is not None:
-    with st.spinner("Fetching recommendations..."):
-        time.sleep(2)  # Simulate loading time
+    # with st.spinner("Fetching recommendations..."):
+    #     time.sleep(2)  # Simulate loading time
 
         # Convert DataFrame to JSON and send it to the backend
         response = requests.post(f"{BACKEND_URL}/movie_predictions", json=dataframe.to_dict(orient="records"))
@@ -38,16 +39,28 @@ if st.button("Get Recommendations") and dataframe is not None:
                 st.subheader("Recommended Movies:")
                 df_recommendations = pd.DataFrame(data["predictions"])
                 st.dataframe(df_recommendations)  # Display as DataFrame
+                response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if "info" in data:
+                        st.subheader("Recommended Movie Clusters:")
+                        cluster_df = pd.DataFrame(data["info"])
+                        st.dataframe(cluster_df)  # Display as DataFrame
+                    else:
+                        st.warning("No clusters found.")
+                else:
+                    st.error("Error fetching clusters.")
             else:
                 st.warning("No recommendations found.")
         else:
             st.error("Error fetching recommendations.")
 
-if st.button("Get Cluster Info") and df_recommendations is not None:
-    with st.spinner("Fetching movie clusters..."):
-        time.sleep(2)  # Simulate loading time
-        
-        BACKEND_URL = 'http://localhost:8501'
+if st.button("Get Cluster Info"):
+    # and df_recommendations is not None:
+    # with st.spinner("Fetching movie clusters..."):
+    #     time.sleep(2)  # Simulate loading time
+        st.write(df_recommendations)
         # Convert DataFrame to JSON and send it to the backend
         response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
 
