@@ -17,6 +17,7 @@ st.title("🎬 Film Wizard - Your Personal Movie Recommender")
 st.sidebar.header("Upload CSV for Recommendations")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type=["csv"])
 
+
 BACKEND_URL = "https://film-wizard-backend-967675742185.europe-west1.run.app"
 
 # Load and display GIF
@@ -143,6 +144,18 @@ if st.button("Get Recommendations") and dataframe is not None:
                                 st.image(url, width=120)  # Display the image
                     else:
                         st.warning("No poster images available.")
+                    response = requests.post(f"{BACKEND_URL}/cluster_info", json=df_recommendations.to_dict(orient="records"))
+
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "info" in data:
+                            st.subheader("Recommended Movie Clusters:")
+                            cluster_df = pd.DataFrame(data["info"])
+                            st.dataframe(cluster_df)  # Display as DataFrame
+                        else:
+                            st.warning("No clusters found.")
+                    else:
+                        st.error("Error fetching clusters.")
                 else:
                     st.warning("No recommendations found.")
 
